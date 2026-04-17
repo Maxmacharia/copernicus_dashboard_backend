@@ -45,3 +45,20 @@ def search(data: dict):
     except Exception as e:
         print(f"!!! FastAPI Endpoint Error: {str(e)}")
         return {"error": str(e)}
+
+@app.post("/calculate")
+def calculate_index(data: dict):
+    try:
+        # Extract expression and parameters
+        expression = data.get("expression")
+        collection = data.get("collection")
+        aoi = data.get("aoi")
+        dates = data.get("dates")
+        
+        # Call processing function in raster_calculator.py
+        from raster_calculator import run_math_index
+        result = run_math_index(aoi, dates, collection, expression)
+        return result
+    except Exception as e:
+        return {"error": str(e)}
+

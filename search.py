@@ -50,6 +50,7 @@ def search_sentinel(aoi, start_date, end_date, collection="SENTINEL2_L2A", cloud
             dates = [str(t.values) for t in raw_metadata.coords["t"]]
         print(f"SUCCESS: Found {len(dates)} scenes.")
 
+
         # 5. Visual Processing & Rendering
         if len(dates) > 0:
             print("STEP 5: Processing Median and Scaling for PNG...")
