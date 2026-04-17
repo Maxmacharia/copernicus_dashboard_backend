@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response  # Added Response here
 from search import search_sentinel
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -62,3 +62,25 @@ def calculate_index(data: dict):
     except Exception as e:
         return {"error": str(e)}
 
+@app.post("/export")
+async def export_layer(data: dict):
+    try:
+        from geotiff_handler import generate_geotiff
+        # Generate the actual file bytes
+        gtiff_bytes = generate_geotiff(data)
+        
+        # Sanitize filename
+        safe_name = data.get('name', 'raster').replace(" ", "_").replace("(", "").replace(")", "")
+        
+        # Explicitly return the binary response
+        return Response(
+            content=gtiff_bytes, 
+            media_type="image/tiff",
+            headers={
+                "Content-Disposition": f"attachment; filename={safe_name}.tif",
+                "Access-Control-Expose-Headers": "Content-Disposition"
+            }
+        )
+    except Exception as e:
+        print(f"Export Route Failure: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
