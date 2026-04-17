@@ -1,4 +1,9 @@
 fastapi
 uvicorn
+gunicorn
 requests
 python-dotenv
+openeo
+xarray
+numpy
+rioxarray
