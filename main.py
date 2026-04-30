@@ -1,50 +1,32 @@
 from fastapi import FastAPI, HTTPException, Response
-from search import search_sentinel
 from fastapi.middleware.cors import CORSMiddleware
-from metadata_handler import get_raster_metadata
-from raster_calculator import run_math_index
+from fastapi.concurrency import run_in_threadpool
+import search, raster_calculator, metadata_handler, geotiff_handler
 
 app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # Adjust for production
-    allow_credentials=True,
+    allow_origins=["*"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 @app.post("/search")
-def search(data: dict):
-    return search_sentinel(**data)
+async def search_endpoint(data: dict):
+    # Offload blocking openEO call to a threadpool
+    return await run_in_threadpool(search.search_sentinel, **data)
 
 @app.post("/calculate")
-def calculate_index(data: dict):
-    return run_math_index(data.get("aoi"), data.get("dates"), data.get("collection"), data.get("expression"))
+async def calculate_endpoint(data: dict):
+    return await run_in_threadpool(raster_calculator.run_math_index, 
+        data.get("aoi"), data.get("dates"), data.get("collection"), data.get("expression"))
 
 @app.post("/metadata")
-def metadata_endpoint(data: dict):
-    try:
-        return get_raster_metadata(data)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-@app.post("/visualize")
-def visualize_endpoint(data: dict):
-    # This uses logic similar to search but with specific band/range parameters
-    from metadata_handler import apply_styling
-    try:
-        return apply_styling(data)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+async def metadata_endpoint(data: dict):
+    return await run_in_threadpool(metadata_handler.get_raster_metadata, data)
 
 @app.post("/export")
-async def export_layer(data: dict):
-    from geotiff_handler import generate_geotiff
-    gtiff_bytes = generate_geotiff(data)
-    safe_name = data.get('name', 'raster').replace(" ", "_")
-    return Response(
-        content=gtiff_bytes, 
-        media_type="image/tiff",
-        headers={"Content-Disposition": f"attachment; filename={safe_name}.tif"}
-    )
+async def export_endpoint(data: dict):
+    gtiff_bytes = await run_in_threadpool(geotiff_handler.generate_geotiff, data)
+    return Response(content=gtiff_bytes, media_type="image/tiff")
