@@ -11,6 +11,7 @@ fastapi==0.135.3
 fastapi-cli==0.0.24
 fastapi-cloud-cli==0.16.1
 fastar==0.11.0
+gunicorn==25.3.0
 h11==0.16.0
 h5netcdf==1.8.1
 h5py==3.16.0
